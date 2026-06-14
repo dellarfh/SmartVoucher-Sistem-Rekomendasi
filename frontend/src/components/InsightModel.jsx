@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Cpu, Layers, Activity, Database, GitCommit, Target, CheckCircle2, Crown, Star, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ZAxis } from 'recharts';
 
@@ -17,14 +18,26 @@ export default function InsightModel({ customers, summary }) {
     1: 'Pasif'
   };
 
-  // Menyiapkan data untuk Scatter Plot dari prop 'customers'
-  const scatterData = customers.map(c => ({
-    id: c.CustomerID,
-    recency: c.Recency,
-    frequency: c.Frequency,
-    monetary: c.Monetary,
-    klaster: c.Klaster
-  }));
+  // Menyiapkan data untuk Scatter Plot dengan Teknik Sampling agar lebih ringan
+  const scatterData = useMemo(() => {
+    // Batasi maksimal 800 titik agar browser (Chrome) tidak hang
+    const MAX_POINTS = 800;
+    let dataToRender = customers;
+
+    if (customers.length > MAX_POINTS) {
+      // Mengacak urutan lalu mengambil 800 pertama
+      // (Pola klaster K-Means akan tetap terlihat jelas dan proporsional)
+      dataToRender = [...customers].sort(() => 0.5 - Math.random()).slice(0, MAX_POINTS);
+    }
+
+    return dataToRender.map(c => ({
+      id: c.CustomerID,
+      recency: c.Recency,
+      frequency: c.Frequency,
+      monetary: c.Monetary,
+      klaster: c.Klaster
+    }));
+  }, [customers]); // Hanya hitung ulang jika data dari backend berubah
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -72,7 +85,7 @@ export default function InsightModel({ customers, summary }) {
           <MetricBadge icon={Target} label="Inertia (WCSS)" value="842.37" color="rose" />
         </div>
 
-        {/* 2 Kotak Info (Fitur & Pre-processing) - Dataset Sumber Dihapus */}
+        {/* 2 Kotak Info (Fitur & Pre-processing) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InfoBox title="FITUR / VARIABEL INPUT">
             <ul className="space-y-2 text-sm text-slate-600 font-medium mt-3">
@@ -100,7 +113,7 @@ export default function InsightModel({ customers, summary }) {
         <div className="xl:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
           <div className="mb-6">
             <h3 className="font-bold text-slate-800 text-lg">Visualisasi Klaster: Recency vs Frequency</h3>
-            <p className="text-xs text-slate-500">Setiap titik = 1 pelanggan · Ukuran titik ≈ Nilai Monetary</p>
+            <p className="text-xs text-slate-500">Setiap titik = 1 pelanggan (Sampel) · Ukuran titik ≈ Nilai Monetary</p>
           </div>
           
           <div className="flex-1 w-full min-h-[350px]">
@@ -112,7 +125,8 @@ export default function InsightModel({ customers, summary }) {
                   <YAxis type="number" dataKey="frequency" name="Frequency" unit="x" tick={{fontSize: 12}} tickLine={false} axisLine={false} />
                   <ZAxis type="number" dataKey="monetary" range={[40, 400]} name="Monetary" />
                   <Tooltip content={<CustomTooltip />} cursor={{strokeDasharray: '3 3'}} />
-                  <Scatter data={scatterData} fill="#8884d8" fillOpacity={0.7}>
+                  {/* Penambahan isAnimationActive={false} untuk meringankan beban render */}
+                  <Scatter data={scatterData} isAnimationActive={false} fill="#8884d8" fillOpacity={0.7}>
                     {scatterData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[entry.klaster]} />
                     ))}
@@ -149,10 +163,10 @@ export default function InsightModel({ customers, summary }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                <CentroidRow color="bg-blue-500" name="Reguler" r="65.4" f="5.8" m="2.3jt" textColor="text-blue-600" />
-                <CentroidRow color="bg-rose-500" name="Pasif" r="198.2" f="1.4" m="185rb" textColor="text-rose-600" />
-                <CentroidRow color="bg-amber-500" name="Mega VIP" r="12.1" f="34.7" m="128.5jt" textColor="text-amber-600" />
-                <CentroidRow color="bg-emerald-500" name="VIP" r="28.3" f="14.2" m="18.8jt" textColor="text-emerald-600" />
+                <CentroidRow color="bg-blue-500" name="Reguler" r="65.4" f="5.8" textColor="text-blue-600" />
+                <CentroidRow color="bg-rose-500" name="Pasif" r="198.2" f="1.4" textColor="text-rose-600" />
+                <CentroidRow color="bg-amber-500" name="Mega VIP" r="12.1" f="34.7" textColor="text-amber-600" />
+                <CentroidRow color="bg-emerald-500" name="VIP" r="28.3" f="14.2" textColor="text-emerald-600" />
               </tbody>
             </table>
 
