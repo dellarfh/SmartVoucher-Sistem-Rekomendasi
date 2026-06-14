@@ -6,18 +6,24 @@ import CustomerTable from './components/CustomerTable';
 import PromoRules from './components/PromoRules';
 import InsightModel from './components/InsightModel';
 
+// Otomatis deteksi lingkungan (Laptop vs Vercel)
+const API_BASE_URL = import.meta.env.MODE === 'development' 
+  ? 'http://127.0.0.1:5000' 
+  : '/_backend';
+
 function App() {
   const [summary, setSummary] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [activeMenu, setActiveMenu] = useState('dashboard');
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/summary')
+    // Memanggil API menggunakan variabel dinamis
+    fetch(`${API_BASE_URL}/api/summary`)
       .then((res) => res.json())
       .then((data) => setSummary(data))
       .catch((err) => console.error("Gagal ambil ringkasan:", err));
 
-    fetch('http://127.0.0.1:5000/api/customers')
+    fetch(`${API_BASE_URL}/api/customers`)
       .then((res) => res.json())
       .then((data) => setCustomers(data))
       .catch((err) => console.error("Gagal ambil data pelanggan:", err));
@@ -31,7 +37,6 @@ function App() {
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto space-y-6">
 
-          {/* Logika Navigasi: Header sekarang digabung ke dalam kondisi dashboard */}
           {activeMenu === 'dashboard' && (
             <>
               <Header />
@@ -43,7 +48,6 @@ function App() {
           
           {activeMenu === 'promo' && <PromoRules summary={summary} />}
           
-          {/* Bagian Insight Model yang sudah terhubung dengan komponennya */}
           {activeMenu === 'insight' && <InsightModel customers={customers} summary={summary} />}
 
         </div>
